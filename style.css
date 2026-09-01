@@ -16,6 +16,7 @@
   --red-bg: #b91c1c;
   --amber: #eab308;
   --amber-bg: #92720a;
+  --teal-bg: #0f766e;
   --radius: 16px;
 }
 
@@ -239,6 +240,11 @@ html, body {
 .grade-moderate { background: var(--orange-bg); }
 .grade-severe { background: var(--red-bg); }
 .grade-gate { background: var(--amber-bg); }
+
+.type-a { background: var(--green-bg); }
+.type-b { background: var(--teal-bg); }
+.type-c { background: var(--amber-bg); }
+.type-d { background: var(--red-bg); }
 
 .card {
   background: var(--card-bg);
