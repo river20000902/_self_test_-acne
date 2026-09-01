@@ -1,108 +1,93 @@
 /*
- * 바르는 여드름 치료제 셀프 테스트 · 닥터나우 (프로토타입)
+ * 내 여드름은 무슨 유형? · 닥터나우 (프로토타입)
  *
  * DRAFT NOTICE:
- * 문항 구성 / 안전 게이트 기준 / 중증도 임계값은 UX·로직 설계를 위한 초안입니다.
+ * 문항 구성 / 유형 매핑 / 판정 로직은 UX 설계를 위한 초안입니다.
  * 실제 서비스 반영 전 반드시 원내 자문 전문의 및 법무/의료광고 검토를 거쳐야 합니다.
+ *
+ * 로직 개요:
+ * - 10문항 모두 예/아니오로만 답변
+ * - 각 문항은 4개 유형(A~D) 중 하나에 매핑되어 있고, "네"로 답하면 해당 유형 점수 +1
+ * - 가장 점수가 높은 유형이 결과. 동점일 경우 C(SOS형) > D(만성 트러블형) > B(호르몬형) > A(지성형) 순으로 우선
+ *   (애매한 경우 안전하게 진료를 더 권하는 방향으로 우선순위를 뒀습니다)
+ * - 전부 "아니오"면 기본값은 A(타고난 지성형)
  */
 
 const QUESTIONS = [
   {
     id: "A1",
-    group: "gate",
-    emoji: "🤰",
-    text: "임신 중이거나 임신 계획 중, 또는 수유 중이신가요?",
-    note: "레티노이드 계열(트레티노인·아다팔렌 등) 성분은 임신·수유 중 사용이 제한돼요.",
+    type: "A",
+    emoji: "✨",
+    text: "T존(이마·코)이 하루에도 여러 번 번들거리나요?",
+    note: "피지 분비가 많은 지성 피부의 대표적인 신호예요.",
   },
   {
     id: "A2",
-    group: "gate",
-    emoji: "💊",
-    text: "현재 경구 여드름약을 복용 중이거나 최근 6개월 이내 복용한 적이 있나요?",
-    note: "경구 치료와 병행 시 피부 자극이나 중복 처방 이슈가 생길 수 있어요.",
-  },
-  {
-    id: "A3",
-    group: "gate",
-    emoji: "⚠️",
-    text: "이전에 여드름 연고·크림을 쓰고 심한 자극, 화끈거림, 알레르기 반응을 겪은 적이 있나요?",
-    note: "특정 성분에 대한 과민반응 이력을 확인하는 질문이에요.",
-  },
-  {
-    id: "A4",
-    group: "gate",
-    emoji: "🧒",
-    text: "만 14세 미만인가요?",
-    note: "연령에 따라 사용 가능한 성분과 보호자 동의 여부가 달라져요.",
+    type: "A",
+    emoji: "⚪",
+    text: "블랙헤드나 화이트헤드 같은 좁쌀 여드름이 잘 올라오나요?",
+    note: "모공이 피지로 막히기 쉬운 지성형에서 흔히 나타나요.",
   },
   {
     id: "B1",
-    group: "severity",
-    weight: 1,
-    emoji: "⚪",
-    text: "블랙헤드·화이트헤드 같은 비염증성 여드름 위주인가요?",
-    note: "초기·경증 여드름에서 흔히 나타나는 형태예요.",
+    type: "B",
+    emoji: "🌙",
+    text: "생리 주기나 특정 시기에 맞춰 트러블이 심해지나요?",
+    note: "호르몬 변화에 민감하게 반응하는 타입일 수 있어요.",
   },
   {
     id: "B2",
-    group: "severity",
-    weight: 1,
+    type: "B",
+    emoji: "😥",
+    text: "스트레스를 받거나 컨디션이 안 좋을 때 트러블이 올라오나요?",
+    note: "컨디션에 따라 피부가 예민해지는 신호예요.",
+  },
+  {
+    id: "C1",
+    type: "C",
+    emoji: "⚡",
+    text: "평소와 다르게 최근 갑자기 여드름이 심해졌나요?",
+    note: "평소 패턴과 다른 급격한 변화는 주의 깊게 볼 필요가 있어요.",
+  },
+  {
+    id: "C2",
+    type: "C",
+    emoji: "🤕",
+    text: "손대면 아픈가요?",
+    note: "통증이 있는 여드름은 염증이 진행 중일 가능성이 높아요.",
+  },
+  {
+    id: "C3",
+    type: "C",
     emoji: "🔴",
-    text: "붉게 부어오르거나 곪는 여드름(구진·농포)이 있나요?",
-    note: "염증성 여드름의 대표적인 신호예요.",
+    text: "크고 단단하며 곪아있는 여드름이 있나요?",
+    note: "염증성 여드름이 심한 상태일 수 있어요.",
   },
   {
-    id: "B3",
-    group: "severity",
-    weight: 2,
-    emoji: "🟣",
-    text: "만지면 아픈 단단한 결절이나 물혹 같은 낭종이 있나요?",
-    note: "중증 여드름(결절낭종성)에서 나타나는 형태예요.",
-  },
-  {
-    id: "B4",
-    group: "severity",
-    weight: 1,
-    emoji: "📍",
-    text: "얼굴 외에 등, 가슴, 어깨에도 여드름이 있나요?",
-    note: "범위가 넓을수록 관리 방법이 달라질 수 있어요.",
-  },
-  {
-    id: "B5",
-    group: "severity",
-    weight: 1,
+    id: "D1",
+    type: "D",
     emoji: "📅",
     text: "여드름이 3개월 이상 지속되고 있나요?",
     note: "만성화 여부를 확인하는 질문이에요.",
   },
   {
-    id: "B6",
-    group: "severity",
-    weight: 1,
-    emoji: "🧴",
-    text: "시중 세안제나 연고를 써봤지만 호전이 없거나 오히려 심해졌나요?",
-    note: "기존 자가관리로 충분한지 판단하는 데 참고해요.",
+    id: "D2",
+    type: "D",
+    emoji: "🔁",
+    text: "이것저것 방법을 써봤지만 좋아졌다 나빠지기를 반복하나요?",
+    note: "자가관리만으로는 한계가 있을 수 있어요.",
   },
   {
-    id: "B7",
-    group: "severity",
-    weight: 1,
+    id: "D3",
+    type: "D",
     emoji: "🩹",
-    text: "여드름이 아문 자리에 흉터나 색소침착이 남는 편인가요?",
+    text: "여드름이 난 자리에 흉터나 색소침착이 잘 남는 편인가요?",
     note: "조기 개입이 필요한지 확인하는 질문이에요.",
-  },
-  {
-    id: "B8",
-    group: "severity",
-    weight: 1,
-    emoji: "🌿",
-    text: "평소 피부가 예민해 화장품이나 자극에 트러블이 잘 나는 편인가요?",
-    note: "저자극·저농도 제품부터 시작해야 하는지 참고할 수 있어요.",
   },
 ];
 
-const GATE_QUESTIONS = QUESTIONS.filter((q) => q.group === "gate");
-const SEVERITY_QUESTIONS = QUESTIONS.filter((q) => q.group === "severity");
+const TYPE_ORDER = ["A", "B", "C", "D"];
+const TIE_BREAK_PRIORITY = ["C", "D", "B", "A"];
 
 const DOCTORNOW_URL = "https://doctornow.co.kr/"; // TODO: 실제 서비스 연동 시 진료 신청 딥링크로 교체
 
@@ -111,7 +96,7 @@ const app = document.getElementById("app");
 const state = {
   screen: "intro", // intro | question | result
   step: 0,
-  answers: {},
+  answers: {}, // questionId -> boolean
   showExitModal: false,
 };
 
@@ -123,82 +108,90 @@ function resetState() {
 }
 
 function computeResult() {
-  const gateHit = GATE_QUESTIONS.find((q) => state.answers[q.id] === true);
-  if (gateHit) {
-    const count = GATE_QUESTIONS.filter((q) => state.answers[q.id] === true).length;
-    return { type: "gate", count, total: GATE_QUESTIONS.length };
+  const scoreByType = { A: 0, B: 0, C: 0, D: 0 };
+  const totalByType = { A: 0, B: 0, C: 0, D: 0 };
+
+  QUESTIONS.forEach((q) => {
+    totalByType[q.type] += 1;
+    if (state.answers[q.id] === true) scoreByType[q.type] += 1;
+  });
+
+  const maxScore = Math.max(...TYPE_ORDER.map((t) => scoreByType[t]));
+
+  let winner;
+  if (maxScore === 0) {
+    winner = "A";
+  } else {
+    winner = TIE_BREAK_PRIORITY.find((t) => scoreByType[t] === maxScore);
   }
 
-  let score = 0;
-  SEVERITY_QUESTIONS.forEach((q) => {
-    if (state.answers[q.id] === true) score += q.weight || 1;
-  });
-  const yesCount = SEVERITY_QUESTIONS.filter((q) => state.answers[q.id] === true).length;
-  const b3 = state.answers["B3"] === true;
-
-  let grade;
-  if (score >= 6 || b3) grade = "severe";
-  else if (score >= 3) grade = "moderate";
-  else grade = "mild";
-
-  return { type: grade, count: yesCount, total: SEVERITY_QUESTIONS.length, score };
+  return {
+    type: winner,
+    count: scoreByType[winner],
+    total: totalByType[winner],
+  };
 }
 
-const RESULT_CONTENT = {
-  gate: {
-    bannerClass: "grade-gate",
-    grade: "확인이 필요해요",
-    emoji: "⚠️",
-    summary: "바르는 치료제, 사용 전에 확인이 필요해요.",
-    tags: ["#확인필요", "#전문의상담"],
+const TYPE_CONTENT = {
+  A: {
+    bannerClass: "type-a",
+    title: "타고난 지성형",
+    emoji: "💧",
+    summary: "타고난 지성형이에요. 꾸준한 케어로 피부를 관리해요.",
+    tags: ["#지성형", "#꾸준한케어"],
     tips: [
-      "선택하신 항목은 특정 성분 사용이 제한되거나 신중한 접근이 필요한 경우예요.",
-      "자가 처방이나 임의 사용보다는 의료진과의 상담을 통해 안전한 방법을 확인하는 것이 중요해요.",
-    ],
-    info: "임신·수유 여부, 경구 치료 병행 여부, 알레르기 이력에 따라 사용 가능한 성분과 용법이 달라져요. 진료를 통해 정확히 확인해 보세요.",
-    showSymptomChips: false,
-  },
-  mild: {
-    bannerClass: "grade-mild",
-    grade: "경증 단계",
-    emoji: "🙂",
-    summary: "지금은 가벼운 관리 단계로 보여요.",
-    tags: ["#경증", "#예방관리"],
-    tips: [
-      "하루 2회 순한 세안으로 피지와 노폐물을 관리해 주세요.",
+      "유분 조절에 도움되는 순한 클렌징과 가벼운 보습으로 밸런스를 맞춰보세요.",
+      "피지가 많다고 보습을 건너뛰면 오히려 트러블이 심해질 수 있어요.",
       "논코메도제닉(comedogenic-free) 제품으로 모공 막힘을 줄여보세요.",
-      "자외선 차단은 트러블 악화와 색소침착 예방에 도움이 돼요.",
     ],
-    info: "여드름은 모낭이 피지·각질로 막히면서 시작돼요. 초기 단계에서는 생활 관리만으로도 호전되는 경우가 많아요.",
-    showSymptomChips: false,
+    info: "타고난 지성 피부는 피지 분비가 활발해 여드름이 잘 나는 편이지만, 꾸준한 관리로 충분히 안정시킬 수 있어요.",
+    recommendation: "care",
+    ctaText: "피부 관리 콘텐츠 보러가기",
   },
-  moderate: {
-    bannerClass: "grade-moderate",
-    grade: "중등도 단계",
-    emoji: "😐",
-    summary: "바르는 치료제로 관리 가능한 단계로 보여요.",
-    tags: ["#중등도", "#바르는치료제"],
+  B: {
+    bannerClass: "type-b",
+    title: "예민 호르몬형",
+    emoji: "🌙",
+    summary: "예민 호르몬형이에요. 꾸준한 케어로 피부를 관리해요.",
+    tags: ["#호르몬형", "#꾸준한케어"],
     tips: [
-      "처방 외용제는 꾸준히, 정해진 용법대로 사용하는 것이 효과에 가장 중요해요.",
-      "초반에는 피부 자극(건조함, 붉어짐)이 있을 수 있어요. 보습을 함께 병행해 주세요.",
-      "4~8주 정도는 꾸준히 사용해야 변화를 체감할 수 있어요.",
+      "트러블이 심해지는 시기를 기록해두면 패턴을 파악하는 데 도움이 돼요.",
+      "이 시기에는 자극적인 제품보다 순한 케어로 피부를 안정시켜 주세요.",
+      "충분한 수면과 스트레스 관리도 피부 컨디션에 영향을 줘요.",
     ],
-    info: "염증성 여드름은 방치하면 흉터로 이어질 수 있어 적절한 시점의 치료가 중요해요.",
-    showSymptomChips: true,
+    info: "호르몬이나 컨디션 변화에 따라 트러블이 오르내리는 타입이에요. 원인을 파악하고 꾸준히 관리하면 충분히 안정시킬 수 있어요.",
+    recommendation: "care",
+    ctaText: "피부 관리 콘텐츠 보러가기",
   },
-  severe: {
-    bannerClass: "grade-severe",
-    grade: "중증 단계",
-    emoji: "😖",
-    summary: "바르는 치료만으로는 한계가 있을 수 있어요.",
-    tags: ["#중증", "#병행치료 필요"],
+  C: {
+    bannerClass: "type-c",
+    title: "SOS형",
+    emoji: "🚨",
+    summary: "SOS형이에요. 피부과 비대면 진료를 통해 정확한 진단을 받아보세요.",
+    tags: ["#SOS형", "#빠른진료"],
     tips: [
-      "결절·낭종성 여드름은 흉터로 이어지기 쉬워 빠른 진료가 도움이 돼요.",
-      "외용제만으로 충분하지 않다면 경구 치료 병행을 고려할 수 있어요.",
       "임의로 짜거나 압출하면 염증과 흉터가 악화될 수 있어 피해주세요.",
+      "갑자기 심해진 원인(화장품 교체, 야식, 스트레스 등)을 진료 시 함께 이야기해보세요.",
+      "빠르게 대응할수록 흉터로 남을 위험을 줄일 수 있어요.",
     ],
-    info: "중증 여드름은 대면 진료를 통한 정확한 진단과 치료 계획 수립이 특히 중요해요.",
-    showSymptomChips: true,
+    info: "평소와 다르게 갑자기 심해진 상태예요. 방치하면 흉터로 남을 수 있어 빠른 확인이 필요해요.",
+    recommendation: "clinic",
+    ctaText: "닥터나우에서 진료받기",
+  },
+  D: {
+    bannerClass: "type-d",
+    title: "만성 트러블형",
+    emoji: "🔁",
+    summary: "만성 트러블형이에요. 피부과 비대면 진료를 통해 정확한 진단을 받아보세요.",
+    tags: ["#만성트러블형", "#진료권장"],
+    tips: [
+      "오래 반복된 트러블은 자가관리만으로 원인을 찾기 어려운 경우가 많아요.",
+      "지금까지 써본 제품과 방법을 정리해두면 진료 시 도움이 돼요.",
+      "흉터나 색소침착이 남기 전에 확인해보는 게 좋아요.",
+    ],
+    info: "오랫동안 좋아지고 나빠지기를 반복해온 타입이에요. 자가관리만으로는 근본 원인을 찾기 어려울 수 있어요.",
+    recommendation: "clinic",
+    ctaText: "닥터나우에서 진료받기",
   },
 };
 
@@ -210,11 +203,11 @@ function render() {
 
 function renderIntro() {
   app.innerHTML = `
-    <div class="header">닥터나우 여드름 치료제 셀프 테스트</div>
-    <div class="intro-headline">내 여드름,<br />바르는 치료제로 좋아질까요? 🧴</div>
-    <div class="intro-desc">여드름은 종류와 정도에 따라 맞는 관리법이 달라요.</div>
-    <div class="intro-desc">${QUESTIONS.length}가지 질문으로 바르는 치료제가 나에게 맞는지 확인해 보세요.</div>
-    <div class="disclaimer-box">본 테스트는 의학적 진단이 아닌 자가 확인용이에요. 정확한 진단은 피부과 전문의 진료로 이루어집니다.</div>
+    <div class="header">닥터나우 여드름 유형 테스트</div>
+    <div class="intro-headline">내 여드름은<br />무슨 유형? 🔍</div>
+    <div class="intro-desc">단순 유형 테스트, 유형에 따라 피부과 진료를 권해드려요.</div>
+    <div class="intro-desc">${QUESTIONS.length}가지 질문(예/아니오)으로 내 여드름 유형을 확인해 보세요.</div>
+    <div class="disclaimer-box">본 테스트는 의학적 진단이 아닌 유형 확인용이에요. 정확한 진단은 피부과 전문의 진료로 이루어집니다.</div>
     <div class="spacer"></div>
     <button class="btn btn-primary" id="start-btn">시작하기</button>
   `;
@@ -232,7 +225,7 @@ function renderQuestion() {
   app.innerHTML = `
     <div class="header">
       <button class="back" id="back-btn" aria-label="뒤로가기">‹</button>
-      <span>닥터나우 여드름 치료제 셀프 테스트</span>
+      <span>닥터나우 여드름 유형 테스트</span>
     </div>
     <div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div>
     <div class="q-label">질문 ${state.step + 1} / ${QUESTIONS.length}</div>
@@ -292,18 +285,19 @@ function renderExitModal() {
 
 function renderResult() {
   const result = computeResult();
-  const content = RESULT_CONTENT[result.type];
+  const content = TYPE_CONTENT[result.type];
+  const winningQuestions = QUESTIONS.filter((q) => q.type === result.type && state.answers[q.id] === true);
 
-  const selectedSymptomChips = SEVERITY_QUESTIONS.filter((q) => state.answers[q.id] === true)
-    .map((q) => `<span class="chip">#${q.text.length > 14 ? q.text.slice(0, 14) + "…" : q.text}</span>`)
+  const matchedChips = winningQuestions
+    .map((q) => `<span class="chip">#${q.text.length > 16 ? q.text.slice(0, 16) + "…" : q.text}</span>`)
     .join("");
 
   app.innerHTML = `
-    <div class="header">닥터나우 여드름 치료제 셀프 테스트 결과</div>
+    <div class="header">닥터나우 여드름 유형 테스트 결과</div>
     <div class="result-banner ${content.bannerClass}">
-      <div class="r-title">여드름 치료제 셀프 테스트 결과</div>
-      <div class="r-count">해당 항목 ${result.count}개 / ${result.total}개</div>
-      <div class="r-grade">${content.grade}</div>
+      <div class="r-title">여드름 유형 테스트 결과</div>
+      <div class="r-count">${content.title} 신호 ${result.count}개 / ${result.total}개 감지</div>
+      <div class="r-grade">${content.title}</div>
       <div class="r-emoji">${content.emoji}</div>
       <div class="r-summary">${content.summary}</div>
       <div class="r-tags">${content.tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>
@@ -315,19 +309,19 @@ function renderResult() {
     </div>
 
     <div class="card">
-      <h3>🔍 여드름이란?</h3>
+      <h3>🔍 이 유형은?</h3>
       <div class="info-box"><p>${content.info}</p></div>
     </div>
 
     ${
-      content.showSymptomChips && selectedSymptomChips
-        ? `<div class="card"><h3>✅ 내가 선택한 증상</h3><div class="chip-row">${selectedSymptomChips}</div></div>`
+      matchedChips
+        ? `<div class="card"><h3>✅ 이런 답변에서 감지됐어요</h3><div class="chip-row">${matchedChips}</div></div>`
         : ""
     }
 
     <div class="cta-stack">
-      <a class="btn btn-primary" href="${DOCTORNOW_URL}" target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">닥터나우에서 진료받기</a>
-      <button class="btn btn-ghost" id="copy-btn">증상 텍스트 복사</button>
+      <a class="btn btn-primary" href="${DOCTORNOW_URL}" target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">${content.ctaText}</a>
+      <button class="btn btn-ghost" id="copy-btn">결과 텍스트 복사</button>
       <button class="btn btn-ghost" id="share-btn">친구에게 공유</button>
       <button class="btn btn-ghost" id="restart-btn">↻ 다시 테스트 하기</button>
     </div>
@@ -342,11 +336,10 @@ function renderResult() {
   `;
 
   document.getElementById("copy-btn").addEventListener("click", async () => {
-    const lines = SEVERITY_QUESTIONS.filter((q) => state.answers[q.id] === true).map((q) => `- ${q.text}`);
-    const text = `[여드름 치료제 셀프 테스트 결과]\n${content.grade} (해당 항목 ${result.count}/${result.total})\n${lines.join("\n")}`;
+    const text = `[여드름 유형 테스트 결과]\n나는 ${content.title}! (${content.title} 신호 ${result.count}/${result.total}개 감지)\n${content.summary}`;
     try {
       await navigator.clipboard.writeText(text);
-      showToast("증상 내용이 복사되었어요");
+      showToast("결과가 복사되었어요");
     } catch (e) {
       showToast("복사에 실패했어요. 브라우저 권한을 확인해 주세요");
     }
@@ -354,8 +347,8 @@ function renderResult() {
 
   document.getElementById("share-btn").addEventListener("click", async () => {
     const shareData = {
-      title: "여드름 치료제 셀프 테스트 · 닥터나우",
-      text: `내 여드름 셀프 테스트 결과: ${content.grade}`,
+      title: "내 여드름은 무슨 유형? · 닥터나우",
+      text: `내 여드름 유형 테스트 결과: ${content.title}`,
       url: window.location.href,
     };
     if (navigator.share) {
